@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class BirthdayDB extends SQLiteOpenHelper {
 
     public BirthdayDB(Context context) {
-        super(context, "BDB.db", null, 2);
+        super(context, "BDB.db", null, 3);
     }
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -20,7 +20,8 @@ public class BirthdayDB extends SQLiteOpenHelper {
                 + "name TEXT,"
                 + "phone TEXT,"
                 + "dob INT,"
-                + "image TEXT"
+                + "image TEXT,"
+                + "user_id TEXT"
                 + ")";
         db.execSQL(sql);
     }
@@ -29,8 +30,11 @@ public class BirthdayDB extends SQLiteOpenHelper {
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE dobinfo ADD COLUMN image TEXT");
         }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE dobinfo ADD COLUMN user_id TEXT");
+        }
     }
-    public void insertDOBInfo(String ID, String name, String phone, long date, String image) {
+    public void insertDOBInfo(String ID, String name, String phone, long date, String image, String user_id) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cols = new ContentValues();
         cols.put("ID", ID);
@@ -38,16 +42,18 @@ public class BirthdayDB extends SQLiteOpenHelper {
         cols.put("phone", phone);
         cols.put("dob", date);
         cols.put("image", image);
+        cols.put("user_id", user_id);
         db.insert("dobinfo", null ,  cols);
         db.close();
     }
-    public void updateDOBInfo(String ID, String name, String phone, long date, String image) {
+    public void updateDOBInfo(String ID, String name, String phone, long date, String image, String user_id) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cols = new ContentValues();
         cols.put("name", name);
         cols.put("phone", phone);
         cols.put("dob", date);
         cols.put("image", image);
+        cols.put("user_id", user_id);
         db.update("dobinfo", cols, "ID=?", new String[ ] {ID} );
         db.close();
     }

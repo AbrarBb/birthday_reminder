@@ -3,6 +3,7 @@ package com.example.birthday_reminder;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
@@ -17,12 +18,23 @@ public class MainActivity extends Activity {
     private Button btnExit, btnAddNew;
     private ArrayList<Birthday> birthdays;
     private CustomListAdapter adapter;
+    private String userId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        System.out.println("onCreate...MainActivity");
         setContentView(R.layout.activity_main);
+        
+        SharedPreferences pref = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        userId = pref.getString("LOGGED_IN_USER", "");
+        
+        if (userId.isEmpty()) {
+            Intent intent = new Intent(this, SignupActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         btnExit = findViewById(R.id.btnExit);
         btnAddNew = findViewById(R.id.btnAddNew);
 
@@ -34,14 +46,19 @@ public class MainActivity extends Activity {
         btnExit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                System.out.println("btnExit...MainActivity");
+                // Logout logic
+                SharedPreferences.Editor editor = pref.edit();
+                editor.putString("LOGGED_IN_USER", "");
+                editor.apply();
+                Intent intent = new Intent(MainActivity.this, SignupActivity.class);
+                startActivity(intent);
                 finish();
             }
         });
+        
         btnAddNew.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                System.out.println("btnAddNew...MainActivity");
                 Intent i = new Intent(MainActivity.this, BirthdayInfoActivity.class);
                 startActivity(i);
             }
@@ -73,60 +90,28 @@ public class MainActivity extends Activity {
     @Override
     public void onStart() {
         super.onStart();
-        System.out.println("onStart...MainActivity");
         this.loadDOBs();
     }
 
     private void loadDOBs() {
-        // clear any previously stored items from the arraylist
         this.birthdays.clear();
         BirthdayDB bdb = new BirthdayDB(this);
 
-        Cursor res = bdb.selectDOBs("SELECT * FROM dobinfo");
+        // Filter by user_id
+        Cursor res = bdb.selectDOBs("SELECT * FROM dobinfo WHERE user_id='" + userId + "'");
         if (res != null && res.getCount() > 0) {
             while (res.moveToNext()) {
                 String id = res.getString(0);
                 String name = res.getString(1);
                 String phone = res.getString(2);
                 long dobMills = res.getLong(3);
-                String dobStr = String.valueOf(dobMills);
-                Birthday dob = new Birthday(id, name, dobStr, phone, "");
+                String image = res.getString(4);
+                
+                Birthday dob = new Birthday(id, name, String.valueOf(dobMills), phone, image);
                 this.birthdays.add(dob);
             }
             res.close();
-        } else {
-            Toast.makeText(this, "Database is empty !!", Toast.LENGTH_LONG).show();
         }
         adapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        System.out.println("onPause...MainActivity");
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        System.out.println("onResume...MainActivity");
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        System.out.println("onStop...MainActivity");
-    }
-
-    @Override
-    public void onRestart() {
-        super.onRestart();
-        System.out.println("onRestart...MainActivity");
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        System.out.println("onDestroy...MainActivity");
     }
 }

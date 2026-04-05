@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -31,6 +32,7 @@ public class BirthdayInfoActivity extends AppCompatActivity {
     private ImageView ivPhoto;
     private String personID = "";
     private String imageString = "";
+    private String userId = "";
 
     private final ActivityResultLauncher<String> mGetContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -52,6 +54,9 @@ public class BirthdayInfoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_birthday_info);
+        
+        SharedPreferences pref = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        userId = pref.getString("LOGGED_IN_USER", "");
 
         btnCancel = findViewById(R.id.btnCancel);
         btnSave = findViewById(R.id.btnSave);
@@ -109,10 +114,10 @@ public class BirthdayInfoActivity extends AppCompatActivity {
                 BirthdayDB bdb = new BirthdayDB(BirthdayInfoActivity.this);
                 if (personID == null || personID.isEmpty()) {
                     personID = System.currentTimeMillis() + phone;
-                    bdb.insertDOBInfo(personID, name, phone, dobMills, imageString);
+                    bdb.insertDOBInfo(personID, name, phone, dobMills, imageString, userId);
                     Toast.makeText(BirthdayInfoActivity.this, "Birthday Saved Successfully", Toast.LENGTH_SHORT).show();
                 } else {
-                    bdb.updateDOBInfo(personID, name, phone, dobMills, imageString);
+                    bdb.updateDOBInfo(personID, name, phone, dobMills, imageString, userId);
                     Toast.makeText(BirthdayInfoActivity.this, "Birthday Updated Successfully", Toast.LENGTH_SHORT).show();
                 }
                 finish();

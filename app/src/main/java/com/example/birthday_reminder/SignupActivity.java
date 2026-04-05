@@ -14,17 +14,17 @@ import android.widget.Toast;
 public class SignupActivity extends AppCompatActivity {
     private Button btnExit, btnSignup, btnToggle;
     private EditText etUserId, etPass, etRePass;
-    private TextView tvTitle;
+    private TextView tvTitle, tvRepassLabel;
     private SharedPreferences pref;
-    private String userId, prevPass;
+    private boolean isLoginMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        System.out.println("onCreate...SignupActivity");
         setContentView(R.layout.activity_signup);
 
         tvTitle = findViewById(R.id.tvTitle);
+        tvRepassLabel = findViewById(R.id.tvRepassLabel);
         btnExit = findViewById(R.id.btnExit);
         btnSignup = findViewById(R.id.btnSignup);
         btnToggle = findViewById(R.id.btnToggle);
@@ -32,22 +32,25 @@ public class SignupActivity extends AppCompatActivity {
         etPass = findViewById(R.id.etPass);
         etRePass = findViewById(R.id.etRePass);
 
-        pref = this.getPreferences(MODE_PRIVATE);
-        userId = pref.getString("USER_ID", "NO-ACCOUNT");
-        if(!userId.equals("NO-ACCOUNT")){
-            prevPass = pref.getString("PASS", "");
-            // convert to login page
-            etRePass.setVisibility(View.GONE);
-            findViewById(R.id.tvRepassLabel).setVisibility(View.GONE);
-            tvTitle.setText("Login");
-            btnSignup.setText("Login");
-            btnToggle.setText("Don't have an account");
+        pref = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+
+        // Check if any user was previously logged in
+        String lastUser = pref.getString("LOGGED_IN_USER", "");
+        if (!lastUser.isEmpty()) {
+            setLoginMode(true);
+            etUserId.setText(lastUser);
         }
+
+        btnToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setLoginMode(!isLoginMode);
+            }
+        });
 
         btnExit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                System.out.println("btnExit...SignupActivity");
                 finish();
             }
         });
@@ -55,86 +58,77 @@ public class SignupActivity extends AppCompatActivity {
         btnSignup.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                System.out.println("btnGo...SignupActivity");
+                String user = etUserId.getText().toString().trim();
+                String pass = etPass.getText().toString().trim();
+                String rePass = etRePass.getText().toString().trim();
 
-                String user = etUserId.getText().toString();
-                String pass = etPass.getText().toString();
-                String rePass = etRePass.getText().toString();
-
-                System.out.println(user);
-                System.out.println(pass);
-                System.out.println(rePass);
-
-                if(user.length() < 4){
-                    Toast.makeText(SignupActivity.this, "User id must be 4-8 letters", Toast.LENGTH_LONG).show();
+                if (user.isEmpty() || pass.isEmpty()) {
+                    Toast.makeText(SignupActivity.this, "Fields cannot be empty", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                if(pass.length() < 4){
-                    return;
-                }
-
-                if(prevPass == null) {
-                    if (rePass.length() < 4) {
+                if (isLoginMode) {
+                    // Login Logic: Retrieve password for this specific user
+                    String savedPass = pref.getString("PASS_" + user, "");
+                    if (!savedPass.isEmpty() && pass.equals(savedPass)) {
+                        saveSession(user);
+                        goToMain();
+                    } else {
+                        Toast.makeText(SignupActivity.this, "Invalid User ID or Password", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    // Signup Logic
+                    if (user.length() < 4) {
+                        Toast.makeText(SignupActivity.this, "User ID must be at least 4 letters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (pass.length() < 4) {
+                        Toast.makeText(SignupActivity.this, "Password must be 4 digits", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     if (!pass.equals(rePass)) {
-                        System.out.println("Passwords didn't match");
+                        Toast.makeText(SignupActivity.this, "Passwords do not match", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                } else {
-                    if(!user.equals(userId)){
-                        Toast.makeText(SignupActivity.this, "User Id didn't match", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    if(!pass.equals(prevPass)) {
-                        Toast.makeText(SignupActivity.this, "Password didn't match", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                }
 
-                System.out.println(userId);
+                    // Store password with a user-specific key to support multiple accounts
+                    SharedPreferences.Editor editor = pref.edit();
+                    editor.putString("PASS_" + user, pass);
+                    editor.apply();
 
-                if(!userId.equals("NO-ACCOUNT")){
-                    SharedPreferences.Editor et = pref.edit();
-                    et.putString("USER_ID", userId);
-                    et.putString("PASS", pass);
-                    et.apply();
+                    Toast.makeText(SignupActivity.this, "Account created successfully", Toast.LENGTH_SHORT).show();
+                    setLoginMode(true);
                 }
-                Intent i = new Intent(SignupActivity.this, MainActivity.class);
-                startActivity(i);
-                finish();
             }
         });
     }
-    @Override
-    public void onStart(){
-        super.onStart();
-        System.out.println("onStart...SignupActivity");
+
+    private void saveSession(String user) {
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("LOGGED_IN_USER", user);
+        editor.apply();
     }
-    @Override
-    public void onPause(){
-        super.onPause();
-        System.out.println("onPause...SignupActivity");
+
+    private void setLoginMode(boolean loginMode) {
+        this.isLoginMode = loginMode;
+        if (loginMode) {
+            tvTitle.setText("Login");
+            btnSignup.setText("Login");
+            btnToggle.setText("Don't have an account");
+            etRePass.setVisibility(View.GONE);
+            tvRepassLabel.setVisibility(View.GONE);
+        } else {
+            tvTitle.setText("Signup");
+            btnSignup.setText("Signup");
+            btnToggle.setText("Already have an account");
+            etRePass.setVisibility(View.VISIBLE);
+            tvRepassLabel.setVisibility(View.VISIBLE);
+        }
     }
-    @Override
-    public void onResume(){
-        super.onResume();
-        System.out.println("onResume...SignupActivity");
-    }
-    @Override
-    public void onStop(){
-        super.onStop();
-        System.out.println("onStop...SignupActivity");
-    }
-    @Override
-    public void onRestart(){
-        super.onRestart();
-        System.out.println("onRestart...SignupActivity");
-    }
-    @Override
-    public void onDestroy(){
-        super.onDestroy();
-        System.out.println("onDestroy...SignupActivity");
+
+    private void goToMain() {
+        Intent i = new Intent(SignupActivity.this, MainActivity.class);
+        startActivity(i);
+        finish();
     }
 }
