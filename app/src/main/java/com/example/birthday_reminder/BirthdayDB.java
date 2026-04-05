@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class BirthdayDB extends SQLiteOpenHelper {
 
     public BirthdayDB(Context context) {
-        super(context, "BDB.db", null, 1);
+        super(context, "BDB.db", null, 2);
     }
     @Override
     public void onCreate(SQLiteDatabase db) {
@@ -19,31 +19,35 @@ public class BirthdayDB extends SQLiteOpenHelper {
                 + "ID TEXT PRIMARY KEY,"
                 + "name TEXT,"
                 + "phone TEXT,"
-                + "dob INT"
+                + "dob INT,"
+                + "image TEXT"
                 + ")";
         db.execSQL(sql);
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        System.out.println("Write code to modify database schema here");
-        // db.execSQL("ALTER table my_table  ......");
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE dobinfo ADD COLUMN image TEXT");
+        }
     }
-    public void insertDOBInfo(String ID, String name, String phone, long date) {
+    public void insertDOBInfo(String ID, String name, String phone, long date, String image) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cols = new ContentValues();
         cols.put("ID", ID);
         cols.put("name", name);
         cols.put("phone", phone);
         cols.put("dob", date);
+        cols.put("image", image);
         db.insert("dobinfo", null ,  cols);
         db.close();
     }
-    public void updateDOBInfo(String ID, String name, String phone, long date) {
+    public void updateDOBInfo(String ID, String name, String phone, long date, String image) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cols = new ContentValues();
         cols.put("name", name);
         cols.put("phone", phone);
         cols.put("dob", date);
+        cols.put("image", image);
         db.update("dobinfo", cols, "ID=?", new String[ ] {ID} );
         db.close();
     }

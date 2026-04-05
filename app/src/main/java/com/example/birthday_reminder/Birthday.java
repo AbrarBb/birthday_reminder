@@ -24,7 +24,7 @@ public class Birthday {
         try {
             long millis = Long.parseLong(dob);
             Date date = new Date(millis);
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault());
             return sdf.format(date);
         } catch (NumberFormatException e) {
             return dob;
@@ -39,16 +39,24 @@ public class Birthday {
 
             Calendar today = Calendar.getInstance();
 
-            int age = today.get(Calendar.YEAR) - dobCal.get(Calendar.YEAR);
+            int years = today.get(Calendar.YEAR) - dobCal.get(Calendar.YEAR);
+            int months = today.get(Calendar.MONTH) - dobCal.get(Calendar.MONTH);
+            int days = today.get(Calendar.DAY_OF_MONTH) - dobCal.get(Calendar.DAY_OF_MONTH);
 
-            if (today.get(Calendar.MONTH) < dobCal.get(Calendar.MONTH) ||
-                    (today.get(Calendar.MONTH) == dobCal.get(Calendar.MONTH) &&
-                            today.get(Calendar.DAY_OF_MONTH) < dobCal.get(Calendar.DAY_OF_MONTH))) {
-                age--;
+            if (days < 0) {
+                Calendar prevMonth = (Calendar) today.clone();
+                prevMonth.add(Calendar.MONTH, -1);
+                days += prevMonth.getActualMaximum(Calendar.DAY_OF_MONTH);
+                months--;
             }
-            return String.valueOf(age);
-        } catch (NumberFormatException e) {
-            return "0";
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            return years + " years " + months + " months " + days + " days";
+        } catch (Exception e) {
+            return "0 years 0 months 0 days";
         }
     }
 }
