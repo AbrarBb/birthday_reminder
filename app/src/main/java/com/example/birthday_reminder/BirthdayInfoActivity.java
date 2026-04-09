@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
@@ -19,15 +20,20 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.NameValuePair;
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.message.BasicNameValuePair;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class BirthdayInfoActivity extends AppCompatActivity {
 
-    private Button btnCancel, btnSave;
+    private Button btnCancel, btnSave, btnDelete;
     private EditText etName, etPhone, etDOB;
     private ImageView ivPhoto;
     private String personID = "";
@@ -60,6 +66,7 @@ public class BirthdayInfoActivity extends AppCompatActivity {
 
         btnCancel = findViewById(R.id.btnCancel);
         btnSave = findViewById(R.id.btnSave);
+        btnDelete = findViewById(R.id.btnDelete);
 
         etName = findViewById(R.id.etName);
         etPhone = findViewById(R.id.etPhone);
@@ -70,6 +77,7 @@ public class BirthdayInfoActivity extends AppCompatActivity {
         if (i != null && i.hasExtra("PERSON_ID")) {
             personID = i.getStringExtra("PERSON_ID");
             loadExistingData();
+            btnDelete.setVisibility(View.VISIBLE);
         }
 
         ivPhoto.setOnClickListener(new View.OnClickListener() {
@@ -82,6 +90,18 @@ public class BirthdayInfoActivity extends AppCompatActivity {
         btnCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                finish();
+            }
+        });
+
+        btnDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                BirthdayDB bdb = new BirthdayDB(BirthdayInfoActivity.this);
+                bdb.deleteDOBInfo(personID);
+                // Synchronize deletion with remote server
+                deleteDOBFromRemoteServer(personID);
+                Toast.makeText(BirthdayInfoActivity.this, "Birthday Deleted", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
@@ -115,14 +135,58 @@ public class BirthdayInfoActivity extends AppCompatActivity {
                 if (personID == null || personID.isEmpty()) {
                     personID = System.currentTimeMillis() + phone;
                     bdb.insertDOBInfo(personID, name, phone, dobMills, imageString, userId);
-                    Toast.makeText(BirthdayInfoActivity.this, "Birthday Saved Successfully", Toast.LENGTH_SHORT).show();
                 } else {
                     bdb.updateDOBInfo(personID, name, phone, dobMills, imageString, userId);
-                    Toast.makeText(BirthdayInfoActivity.this, "Birthday Updated Successfully", Toast.LENGTH_SHORT).show();
                 }
+                
+                // Backup to Remote Server including userId for filtering
+                storeDOBinRemoteServer(personID, name, phone, dobMills);
+                
                 finish();
             }
         });
+    }
+
+    private void storeDOBinRemoteServer(String personID, String name, String phone, long dobMills) {
+        String dobKey = personID;
+        // Append userId to the value string so we can filter when restoring
+        String dobValue = personID + "," + name + "," + phone + "," + dobMills + "," + userId;
+
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                String url = "http://www.muthosoft.com/univ/cse489/key_value.php";
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("action", "backup"));
+                params.add(new BasicNameValuePair("sid", "2022360010"));
+                params.add(new BasicNameValuePair("semester", "2026-1"));
+                params.add(new BasicNameValuePair("key", dobKey));
+                params.add(new BasicNameValuePair("value", dobValue));
+
+                return RemoteAccess.getInstance().makeHttpRequest(url, "POST", params);
+            }
+            @Override
+            protected void onPostExecute(String data) {}
+        }.execute();
+    }
+
+    private void deleteDOBFromRemoteServer(String personID) {
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                String url = "http://www.muthosoft.com/univ/cse489/key_value.php";
+                List<NameValuePair> params = new ArrayList<>();
+                // Common action names for deletion in this API are 'remove' or 'delete'
+                params.add(new BasicNameValuePair("action", "remove")); 
+                params.add(new BasicNameValuePair("sid", "2022360010"));
+                params.add(new BasicNameValuePair("semester", "2026-1"));
+                params.add(new BasicNameValuePair("key", personID));
+
+                return RemoteAccess.getInstance().makeHttpRequest(url, "POST", params);
+            }
+            @Override
+            protected void onPostExecute(String data) {}
+        }.execute();
     }
 
     private void loadExistingData() {

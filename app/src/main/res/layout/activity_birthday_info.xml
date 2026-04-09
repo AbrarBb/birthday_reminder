@@ -106,6 +106,13 @@
             android:layout_weight="1"
             android:text="Cancel"/>
         <Button
+            android:id="@+id/btnDelete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Delete"
+            android:visibility="gone"/>
+        <Button
             android:id="@+id/btnSave"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

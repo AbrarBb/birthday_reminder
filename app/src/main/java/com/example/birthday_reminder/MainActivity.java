@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -12,7 +13,14 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.NameValuePair;
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.message.BasicNameValuePair;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends Activity {
     private Button btnExit, btnAddNew;
@@ -80,11 +88,33 @@ public class MainActivity extends Activity {
                 Birthday b = birthdays.get(i);
                 BirthdayDB bdb = new BirthdayDB(MainActivity.this);
                 bdb.deleteDOBInfo(b.id);
+                
+                // Synchronize deletion with remote server
+                deleteDOBFromRemoteServer(b.id);
+                
                 loadDOBs();
                 return true;
             }
         });
 
+    }
+
+    private void deleteDOBFromRemoteServer(String personID) {
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                String url = "http://www.muthosoft.com/univ/cse489/key_value.php";
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("action", "remove")); 
+                params.add(new BasicNameValuePair("sid", "2022360010"));
+                params.add(new BasicNameValuePair("semester", "2026-1"));
+                params.add(new BasicNameValuePair("key", personID));
+
+                return RemoteAccess.getInstance().makeHttpRequest(url, "POST", params);
+            }
+            @Override
+            protected void onPostExecute(String data) {}
+        }.execute();
     }
 
     @Override
@@ -113,5 +143,61 @@ public class MainActivity extends Activity {
             res.close();
         }
         adapter.notifyDataSetChanged();
+        
+        // Load data from remote server
+        loadDOBsFromRemoteServer();
+    }
+
+    private void loadDOBsFromRemoteServer() {
+        new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                String url = "http://www.muthosoft.com/univ/cse489/key_value.php";
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("action", "restore"));
+                params.add(new BasicNameValuePair("sid", "2022360010"));
+                params.add(new BasicNameValuePair("semester", "2026-1"));
+
+                return RemoteAccess.getInstance().makeHttpRequest(url, "POST", params);
+            }
+
+            @Override
+            protected void onPostExecute(String data) {
+                if (data == null) return;
+                try {
+                    JSONObject json = new JSONObject(data);
+                    if (json.has("key-value")) {
+                        JSONArray ja = json.getJSONArray("key-value");
+                        for (int i = 0; i < ja.length(); i++) {
+                            JSONObject j = ja.getJSONObject(i);
+                            String value = j.getString("value");
+                            String[] colValues = value.split(",");
+                            
+                            // Check if this entry belongs to the current user
+                            if (colValues.length >= 5) {
+                                String remoteUserId = colValues[4];
+                                if (remoteUserId.equals(userId)) {
+                                    // Check if it already exists in the list to avoid duplicates
+                                    boolean exists = false;
+                                    for (Birthday b : birthdays) {
+                                        if (b.id.equals(colValues[0])) {
+                                            exists = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!exists) {
+                                        Birthday dob = new Birthday(colValues[0], colValues[1], colValues[3], colValues[2], "");
+                                        birthdays.add(dob);
+                                    }
+                                }
+                            }
+                        }
+                        adapter.notifyDataSetChanged();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
     }
 }

@@ -1,20 +1,21 @@
 # Birthday Reminder App
 
-A personal Android application to manage and remember the birthdays of your friends and family. Each user has their own private list, secured with a login system.
+A personal Android application to manage and remember the birthdays of your friends and family. Each user has their own private list, secured with a login system, with remote backup capabilities.
 
-##  Features
+## 🚀 Features
 
 *   **Multi-User Support**: Secure login and signup system where each user has their own private birthday list.
 *   **Detailed Birthday Management**: Add, edit, and delete birthday records including Name, Phone Number, and Date of Birth.
 *   **Photo Uploads**: Attach a photo to each birthday record from your gallery.
 *   **Automatic Age Calculation**: Displays the precise age in **Years, Months, and Days**.
 *   **Formatted Dates**: View dates in a clean "DD MMMM, YYYY" format.
-*   **Data Persistence**: Uses SQLite for birthday data and SharedPreferences for user sessions and credentials.
+*   **Data Persistence**: Uses SQLite for local storage and SharedPreferences for user sessions and credentials.
+*   **Remote Backup & Restore**: Synchronizes birthday records with a remote server using a custom API to ensure data safety.
 *   **Clean UI**: Custom list layouts for an intuitive user experience.
 
 ---
 
-##  How it was built (Step-by-Step)
+## 🛠️ How it was built (Step-by-Step)
 
 ### 1. Database Schema & Persistence
 We started by creating `BirthdayDB.java`, an `SQLiteOpenHelper`. It manages a table called `dobinfo` with columns for:
@@ -52,13 +53,20 @@ In `SignupActivity.java`, we implemented a dual-mode screen:
 *   Added **Logout** functionality via the Exit button in the main screen.
 *   Handled database version upgrades to add new columns like `image` and `user_id` without losing data.
 
+### 7. Remote Synchronization
+*   **RemoteAccess Class**: Developed a singleton `RemoteAccess.java` using `HttpURLConnection` to perform `POST` requests to a PHP-based key-value server.
+*   **Background Tasks**: Used `AsyncTask` to ensure network operations don't block the main UI thread.
+*   **Backup**: Every time a user saves a birthday locally, the app sends a comma-separated string of the data to the server as a backup.
+*   **Restore**: When the app starts, it fetches all stored records from the server and populates the list, ensuring data is available across sessions.
+
 ---
 
-##  Screenshots
+## 📱 Screenshots
 *(Add your screenshots here later)*
 
-##  Technologies Used
+## 🛠 Technologies Used
 *   **Language**: Java
 *   **Database**: SQLite
 *   **Storage**: SharedPreferences
+*   **Networking**: HttpURLConnection, AsyncTask, JSON Parsing.
 *   **UI Components**: ListView, Custom Adapters, ImageViews, Material Design Buttons.
