@@ -70,3 +70,8 @@ In `SignupActivity.java`, we implemented a dual-mode screen:
 *   **Storage**: SharedPreferences
 *   **Networking**: HttpURLConnection, AsyncTask, JSON Parsing.
 *   **UI Components**: ListView, Custom Adapters, ImageViews, Material Design Buttons.
+
+### https://drive.google.com/file/d/1jbxHK_NyG2O3tTEkKeqAU5GUZnoKNmX3/view?usp=drivesdk
+
+
+### https://drive.google.com/file/d/1KsmpKsLrj-I6-mjs9KB_6EkFqVwd3K9I/view?usp=drivesdk
