@@ -2,7 +2,7 @@
 
 A personal Android application to manage and remember the birthdays of your friends and family. Each user has their own private list, secured with a login system, with remote backup capabilities.
 
-## 🚀 Features
+##  Features
 
 *   **Multi-User Support**: Secure login and signup system where each user has their own private birthday list.
 *   **Detailed Birthday Management**: Add, edit, and delete birthday records including Name, Phone Number, and Date of Birth.
@@ -61,7 +61,7 @@ In `SignupActivity.java`, we implemented a dual-mode screen:
 
 ---
 
-## 📱 Screenshots
+##  Screenshots
 *(Add your screenshots here later)*
 
 ## 🛠 Technologies Used
