@@ -15,7 +15,7 @@ A personal Android application to manage and remember the birthdays of your frie
 
 ---
 
-## 🛠️ How it was built (Step-by-Step)
+##  How it was built (Step-by-Step)
 
 ### 1. Database Schema & Persistence
 We started by creating `BirthdayDB.java`, an `SQLiteOpenHelper`. It manages a table called `dobinfo` with columns for:
